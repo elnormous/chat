@@ -1,3 +1,6 @@
 [submodule "external/args"]
 	path = external/args
 	url = https://github.com/Taywee/args.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git
