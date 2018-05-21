@@ -15,10 +15,13 @@ public:
         ioService(s),
         socket(s)
     {
-        boost::asio::async_connect(socket, endpoints, [this](boost::system::error_code e, boost::asio::ip::tcp::resolver::iterator) {
-            if (!e)
-                std::cout << "Connected" << std::endl;
-        });
+        boost::system::error_code error;
+        boost::asio::connect(socket, endpoints, error);
+
+        if (!error)
+            std::cout << "Connected" << std::endl;
+        else
+            throw std::runtime_error("Failed to connect");
     }
 
 private:

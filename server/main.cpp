@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <boost/asio.hpp>
 #include "args.hxx"
 
@@ -14,10 +15,17 @@ public:
         socket(std::move(sock))
     {
         std::cout << "Client connected" << std::endl;
+
+        socket.async_receive(boost::asio::buffer(buffer.data(), buffer.size()),
+                             [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
+                                 if (error)
+                                     std::cout << "Disconnected" << std::endl;
+                             });
     }
 
 private:
     boost::asio::ip::tcp::socket socket;
+    std::vector<uint8_t> buffer = std::vector<uint8_t>(1024);
 };
 
 class Server final
@@ -38,7 +46,7 @@ private:
         acceptor.async_accept(socket,
                               [this](boost::system::error_code e) {
                                    if (!e)
-                                       clients.push_back(Client(std::move(socket)));
+                                       clients.push_back(std::unique_ptr<Client>(new Client(std::move(socket))));
 
                                    accept();
                                });
@@ -46,7 +54,7 @@ private:
 
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::socket socket;
-    std::vector<Client> clients;
+    std::vector<std::unique_ptr<Client>> clients;
 };
 
 int main(int argc, const char * argv[])
