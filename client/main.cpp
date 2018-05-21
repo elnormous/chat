@@ -43,13 +43,18 @@ int main(int argc, const char * argv[])
     }
     catch (args::Completion e)
     {
-        std::cout << e.what();
+        std::cout << e.what() << std::endl;
         return EXIT_SUCCESS;
     }
     catch (args::Help)
     {
-        std::cout << parser;
+        std::cout << parser << std::endl;
         return EXIT_SUCCESS;
+    }
+    catch (args::RequiredError e)
+    {
+        std::cout << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
     catch (args::ParseError e)
     {

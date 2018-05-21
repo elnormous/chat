@@ -16,14 +16,21 @@ public:
     {
         std::cout << "Client connected" << std::endl;
 
+        receive();
+    }
+
+private:
+    void receive()
+    {
         socket.async_receive(boost::asio::buffer(buffer.data(), buffer.size()),
                              [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
                                  if (error)
                                      std::cout << "Disconnected" << std::endl;
+                                 else
+                                     receive();
                              });
     }
 
-private:
     boost::asio::ip::tcp::socket socket;
     std::vector<uint8_t> buffer = std::vector<uint8_t>(1024);
 };
@@ -69,13 +76,18 @@ int main(int argc, const char * argv[])
     }
     catch (args::Completion e)
     {
-        std::cout << e.what();
+        std::cout << e.what() << std::endl;
         return EXIT_SUCCESS;
     }
     catch (args::Help)
     {
-        std::cout << parser;
+        std::cout << parser << std::endl;
         return EXIT_SUCCESS;
+    }
+    catch (args::RequiredError e)
+    {
+        std::cout << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
     catch (args::ParseError e)
     {
