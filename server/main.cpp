@@ -5,13 +5,19 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <set>
+#include <vector>
 #include <boost/asio.hpp>
 #include "args.hxx"
+
+class Server;
 
 class Client final
 {
 public:
-    explicit Client(boost::asio::ip::tcp::socket sock):
+    Client(Server& s,
+           boost::asio::ip::tcp::socket sock):
+        server(s),
         socket(std::move(sock))
     {
         std::cout << "Client connected" << std::endl;
@@ -23,14 +29,23 @@ private:
     void receive()
     {
         socket.async_receive(boost::asio::buffer(buffer.data(), buffer.size()),
-                             [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
+                             [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
                                  if (error)
+                                 {
                                      std::cout << "Disconnected" << std::endl;
+                                     disconnect();
+                                 }
                                  else
+                                 {
+                                     std::cout << "Received " << bytesTransferred << " bytes" << std::endl;
                                      receive();
+                                 }
                              });
     }
 
+    void disconnect();
+
+    Server& server;
     boost::asio::ip::tcp::socket socket;
     std::vector<uint8_t> buffer = std::vector<uint8_t>(1024);
 };
@@ -47,13 +62,25 @@ public:
         accept();
     }
 
+    void removeClient(Client& client)
+    {
+        for (auto i = clients.begin(); i != clients.end(); ++i)
+        {
+            if (i->get() == &client)
+            {
+                clients.erase(i);
+                break;
+            }
+        }
+    }
+
 private:
     void accept()
     {
         acceptor.async_accept(socket,
                               [this](boost::system::error_code e) {
                                    if (!e)
-                                       clients.push_back(std::unique_ptr<Client>(new Client(std::move(socket))));
+                                       clients.insert(std::unique_ptr<Client>(new Client(*this, std::move(socket))));
 
                                    accept();
                                });
@@ -61,8 +88,13 @@ private:
 
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::socket socket;
-    std::vector<std::unique_ptr<Client>> clients;
+    std::set<std::unique_ptr<Client>> clients;
 };
+
+void Client::disconnect()
+{
+    server.removeClient(*this);
+}
 
 int main(int argc, const char * argv[])
 {
