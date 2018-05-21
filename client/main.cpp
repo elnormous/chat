@@ -56,7 +56,7 @@ int main(int argc, const char * argv[])
 
             auto endpointIterator = resolver.resolve(address.Get(), port.Get());
 
-            Client client(console, ioService, endpointIterator);
+            Client client(console, ioService, endpointIterator, nickname.Get());
 
             // run io service in a separate thread
             std::thread thread([&ioService]() {

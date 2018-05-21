@@ -39,6 +39,7 @@
 		30813CDA20B348DB002DDF7C /* Server.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Server.hpp; sourceTree = "<group>"; };
 		30813CDC20B34903002DDF7C /* Client.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Client.hpp; sourceTree = "<group>"; };
 		30813CDE20B3493E002DDF7C /* Server.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cpp; sourceTree = "<group>"; };
+		30813CE120B3518C002DDF7C /* Message.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Message.hpp; sourceTree = "<group>"; };
 		30DFA49D20AB87EA007BEB42 /* client */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = client; sourceTree = BUILT_PRODUCTS_DIR; };
 		30DFA49F20AB87EA007BEB42 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		30DFA4A820AB87F7007BEB42 /* server */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = server; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,13 +73,22 @@
 			path = external/args;
 			sourceTree = "<group>";
 		};
+		30813CE020B35169002DDF7C /* common */ = {
+			isa = PBXGroup;
+			children = (
+				30813CE120B3518C002DDF7C /* Message.hpp */,
+			);
+			path = common;
+			sourceTree = "<group>";
+		};
 		30DFA48620AB87D1007BEB42 = {
 			isa = PBXGroup;
 			children = (
 				30813CD720B24AC1002DDF7C /* args */,
 				30DFA49E20AB87EA007BEB42 /* client */,
-				30DFA4A920AB87F7007BEB42 /* server */,
+				30813CE020B35169002DDF7C /* common */,
 				30DFA49020AB87D1007BEB42 /* Products */,
+				30DFA4A920AB87F7007BEB42 /* server */,
 			);
 			sourceTree = "<group>";
 		};
@@ -256,6 +266,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
+					common,
 					external/args,
 					external/spdlog/include,
 					external/cereal/include,
@@ -315,6 +326,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
+					common,
 					external/args,
 					external/spdlog/include,
 					external/cereal/include,

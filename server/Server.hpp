@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 #include "cereal/cereal.hpp"
 #include "spdlog/spdlog.h"
+#include "Message.hpp"
 
 class Client;
 
