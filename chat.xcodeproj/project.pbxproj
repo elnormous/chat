@@ -257,7 +257,8 @@
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
 					external/args,
-					/Users/elviss/Projects/chat/external/spdlog/include,
+					external/spdlog/include,
+					external/cereal/include,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -315,7 +316,8 @@
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
 					external/args,
-					/Users/elviss/Projects/chat/external/spdlog/include,
+					external/spdlog/include,
+					external/cereal/include,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;

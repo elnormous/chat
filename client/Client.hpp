@@ -5,6 +5,7 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include "cereal/cereal.hpp"
 #include "spdlog/spdlog.h"
 
 class Client final

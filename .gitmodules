@@ -4,3 +4,6 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "external/cereal"]
+	path = external/cereal
+	url = https://github.com/USCiLab/cereal.git
