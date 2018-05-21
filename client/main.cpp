@@ -22,11 +22,41 @@ public:
             std::cout << "Connected" << std::endl;
         else
             throw std::runtime_error("Failed to connect");
+
+        receive();
+    }
+
+    void sendMessage(const std::string& message)
+    {
+        socket.send(boost::asio::buffer(message.data(), message.length()));
     }
 
 private:
+    void disconnect()
+    {
+
+    }
+
+    void receive()
+    {
+        socket.async_receive(boost::asio::buffer(buffer.data(), buffer.size()),
+                             [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
+                                 if (error)
+                                 {
+                                     std::cout << "Disconnected" << std::endl;
+                                     disconnect();
+                                 }
+                                 else
+                                 {
+                                     std::cout << "Received " << bytesTransferred << " bytes" << std::endl;
+                                     receive();
+                                 }
+                             });
+    }
+
     boost::asio::io_service& ioService;
     boost::asio::ip::tcp::socket socket;
+    std::vector<uint8_t> buffer = std::vector<uint8_t>(1024);
 };
 
 int main(int argc, const char * argv[])
@@ -83,7 +113,9 @@ int main(int argc, const char * argv[])
         {
             std::getline(std::cin, line);
 
-            std::cout << line << std::endl;
+            ioService.post([&client, line]() {
+                client.sendMessage(line);
+            });
 
             // TODO: encode and send message
         }
