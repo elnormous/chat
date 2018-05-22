@@ -12,7 +12,6 @@ matrix:
             - g++-4.9
       before_install:
         - sudo apt-get install -y libboost-dev
-        - sudo apt-get install -y libboost-endian-dev
         - sudo apt-get install -y libboost-system-dev
       before_script:
         - export CXX=g++-4.9
@@ -31,7 +30,6 @@ matrix:
             - g++-5
       before_install:
         - sudo apt-get install -y libboost-dev
-        - sudo apt-get install -y libboost-endian-dev
         - sudo apt-get install -y libboost-system-dev
       before_script:
         - export CXX=g++-5

@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <boost/asio.hpp>
-#include <boost/endian/conversion.hpp>
 #include <cereal/archives/binary.hpp>
 #include "cereal/cereal.hpp"
 #include "spdlog/spdlog.h"
@@ -50,7 +49,7 @@ namespace chat
             cereal::BinaryOutputArchive archive(outputStream);
             archive(message);
 
-            uint16_t messageSize = boost::endian::native_to_big(static_cast<uint16_t>(outputBuffer.size()));
+            uint16_t messageSize = ntohs(static_cast<uint16_t>(outputBuffer.size()));
             socket.send(boost::asio::buffer(&messageSize, sizeof(messageSize)));
 
             size_t n = socket.send(outputBuffer.data());
@@ -165,7 +164,7 @@ namespace chat
                             {
                                 uint16_t messageSize;
                                 inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
-                                lastMessageSize = boost::endian::big_to_native(messageSize);
+                                lastMessageSize = htons(messageSize);
                             }
 
                             if (inputBuffer.size() >= lastMessageSize)

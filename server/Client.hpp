@@ -7,7 +7,6 @@
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/bind.hpp>
-#include <boost/endian/conversion.hpp>
 #include <cereal/archives/binary.hpp>
 #include "Server.hpp"
 #include "Message.hpp"
@@ -48,7 +47,7 @@ namespace chat
             cereal::BinaryOutputArchive archive(outputStream);
             archive(message);
 
-            uint16_t length = boost::endian::native_to_big(static_cast<uint16_t>(outputBuffer.size()));
+            uint16_t length = ntohs(static_cast<uint16_t>(outputBuffer.size()));
             socket.send(boost::asio::buffer(&length, sizeof(length)));
 
             size_t n = socket.send(outputBuffer.data());
@@ -145,7 +144,7 @@ namespace chat
                             {
                                 uint16_t messageSize;
                                 inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
-                                lastMessageSize = boost::endian::big_to_native(messageSize);
+                                lastMessageSize = htons(messageSize);
                             }
 
                             if (inputBuffer.size() >= lastMessageSize)
