@@ -178,22 +178,17 @@ private:
     {
         inputDeadlineTimer.async_wait([this](const boost::system::error_code& error)
         {
-            if (error != boost::asio::error::operation_aborted)
+            if (!error) // not boost::asio::error::operation_aborted
             {
-                if (inputDeadlineTimer.expires_at() <= boost::asio::deadline_timer::traits_type::now())
-                {
-                    logger->info("{0} disconnected due to inactivity", nickname.empty() ? "Client" : nickname);
+                logger->info("{0} disconnected due to inactivity", nickname.empty() ? "Client" : nickname);
 
-                    Message statusMessage;
-                    statusMessage.type = Message::Type::STATUS;
-                    statusMessage.nickname = nickname;
-                    statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
-                    server.broadcastMessage(statusMessage);
+                Message statusMessage;
+                statusMessage.type = Message::Type::STATUS;
+                statusMessage.nickname = nickname;
+                statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
+                server.broadcastMessage(statusMessage);
 
-                    server.removeClient(*this);
-                }
-                else
-                    checkDeadline();
+                server.removeClient(*this);
             }
         });
     }
