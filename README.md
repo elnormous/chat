@@ -4,7 +4,7 @@ Simple chat client and server.
 
 # Installation
 
-Before compiling the project you have to initialize git submodules:
+[Boost C++ libraries](https://www.boost.org/) are needed to compile the project. Before compiling the project you have to initialize git submodules:
 
 ```shell
 git submodule update --init
