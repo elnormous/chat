@@ -9,8 +9,6 @@
 #include "Server.hpp"
 #include "Client.hpp"
 
-class Server;
-
 int main(int argc, const char * argv[])
 {
     try
@@ -69,7 +67,7 @@ int main(int argc, const char * argv[])
             boost::asio::io_service ioService;
             boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port.Get());
 
-            Server server(console, ioService, endpoint);
+            chat::Server server(console, ioService, endpoint);
 
             ioService.run();
         }

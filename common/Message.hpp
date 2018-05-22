@@ -7,22 +7,25 @@
 #include <string>
 #include <cereal/types/string.hpp>
 
-struct Message
+namespace chat
 {
-    enum class Type
+    struct Message
     {
-        LOGIN,
-        TEXT,
-        STATUS
+        enum class Type
+        {
+            LOGIN,
+            TEXT,
+            STATUS
+        };
+
+        Type type;
+        std::string nickname;
+        std::string body;
+
+        template <class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(type, nickname, body);
+        }
     };
-
-    Type type;
-    std::string nickname;
-    std::string body;
-
-    template <class Archive>
-    void serialize(Archive& archive)
-    {
-        archive(type, nickname, body);
-    }
-};
+}

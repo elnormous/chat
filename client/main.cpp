@@ -70,7 +70,7 @@ int main(int argc, const char * argv[])
             boost::asio::ip::tcp::resolver::query query(address.Get(), std::to_string(port.Get()));
             auto endpointIterator = resolver.resolve(query);
 
-            Client client(console, ioService, endpointIterator->endpoint(), nickname.Get());
+            chat::Client client(console, ioService, endpointIterator->endpoint(), nickname.Get());
 
             ioService.run();
         }
