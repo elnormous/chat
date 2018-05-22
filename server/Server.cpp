@@ -40,3 +40,16 @@ bool Server::isNicknameAvailable(const std::string& nickname) const
 
     return true;
 }
+
+void Server::broadcast(Client& client, const std::string& text)
+{
+    Message message;
+    message.type = Message::Type::TEXT;
+    message.nickname = client.getNickname();
+    message.body = text;
+
+    for (const std::unique_ptr<Client>& client : clients)
+    {
+        if (client->isLoggedIn()) client->sendMessage(message);
+    }
+}

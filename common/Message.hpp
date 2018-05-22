@@ -12,8 +12,7 @@ struct Message
     enum class Type
     {
         LOGIN,
-        CLIENT_TEXT,
-        SERVER_TEXT
+        TEXT
     };
 
     Type type;

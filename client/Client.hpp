@@ -38,7 +38,7 @@ public:
     void sendText(const std::string& str)
     {
         Message message;
-        message.type = Message::Type::CLIENT_TEXT;
+        message.type = Message::Type::TEXT;
         message.body = str;
 
         sendMessage(message);
@@ -77,11 +77,9 @@ private:
         switch (message.type)
         {
             case Message::Type::LOGIN:
-                std::cout << "LOGIN" << std::endl;
                 logger->info(message.body);
                 break;
-            case Message::Type::SERVER_TEXT:
-                std::cout << "SERVER_TEXT" << std::endl;
+            case Message::Type::TEXT:
                 std::cout << message.nickname << ": " << message.body << std::endl;
                 break;
             default:

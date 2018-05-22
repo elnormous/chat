@@ -35,7 +35,6 @@ public:
         return nickname;
     }
 
-private:
     void sendMessage(const Message& message)
     {
         std::ostream outputStream(&outputBuffer);
@@ -49,10 +48,32 @@ private:
         outputBuffer.consume(n); // remove sent data from the buffer
     }
 
+private:
     void login(const std::string& newNickname)
     {
-        loggedIn = true;
-        nickname = newNickname;
+        if (server.isNicknameAvailable(newNickname))
+        {
+            logger->info("{0} logged in", newNickname);
+
+            loggedIn = true;
+            nickname = newNickname;
+
+            Message reply;
+            reply.type = Message::Type::LOGIN;
+            reply.body = "Logged in with nickname " + newNickname;
+            sendMessage(reply);
+        }
+        else
+        {
+            logger->error("Nickname {0} unavailable", newNickname);
+
+            Message reply;
+            reply.type = Message::Type::LOGIN;
+            reply.body = "Nickname " + newNickname + " is unavailable";
+            sendMessage(reply);
+
+            disconnect();
+        }
     }
 
     void handleMessage(Message& message)
@@ -60,31 +81,20 @@ private:
         switch (message.type)
         {
             case Message::Type::LOGIN:
-                if (server.isNicknameAvailable(message.nickname))
+                login(message.nickname);
+                break;
+            case Message::Type::TEXT:
+                if (loggedIn)
                 {
-                    logger->info("{0} logged in", message.nickname);
-
-                    loggedIn = true;
-
-                    Message reply;
-                    reply.type = Message::Type::LOGIN;
-                    reply.body = "Logged in with nickname " + message.nickname;
-                    sendMessage(reply);
+                    logger->info("{0} sent message: {1}", nickname, message.body);
+                    server.broadcast(*this, message.body);
                 }
                 else
                 {
-                    logger->error("Nickname {0} unavailable", message.nickname);
-
-                    Message reply;
-                    reply.type = Message::Type::LOGIN;
-                    reply.body = "Nickname " + message.nickname + " is unavailable";
-                    sendMessage(reply);
+                    logger->error("User not logged in");
 
                     disconnect();
                 }
-                break;
-            case Message::Type::CLIENT_TEXT:
-                std::cout << "CLIENT_TEXT" << std::endl;
                 break;
             default:
                 logger->error("Invalid message received");

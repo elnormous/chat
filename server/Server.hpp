@@ -30,6 +30,7 @@ public:
 
     void removeClient(Client& client);
     bool isNicknameAvailable(const std::string& nickname) const;
+    void broadcast(Client& client, const std::string& text);
 
 private:
     void accept();
