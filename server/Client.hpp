@@ -13,6 +13,9 @@
 
 namespace chat
 {
+    static const size_t BUFFER_SIZE = 1024;
+    static const size_t INACTIVITY_TIMEOUT = 10;
+
     class Client final
     {
     public:
@@ -78,7 +81,7 @@ namespace chat
                 reply.body = "Nickname " + newNickname + " is unavailable";
                 sendMessage(reply);
 
-                server.removeClient(*this);
+                ioService.post([this]() { server.removeClient(*this); });
             }
         }
 
@@ -103,21 +106,21 @@ namespace chat
                     else
                     {
                         logger->error("User not logged in");
-                        server.removeClient(*this);
+                        ioService.post([this]() { server.removeClient(*this); });
                     }
                     break;
                 default:
                     logger->error("Invalid message received");
-                    server.removeClient(*this);
+                    ioService.post([this]() { server.removeClient(*this); });
                     break;
             }
         }
 
         void receive()
         {
-            boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
+            boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(BUFFER_SIZE);
 
-            inputDeadlineTimer.expires_from_now(boost::posix_time::seconds(10));
+            inputDeadlineTimer.expires_from_now(boost::posix_time::seconds(INACTIVITY_TIMEOUT));
             checkDeadline();
 
             socket.async_receive(buffers,
@@ -128,7 +131,7 @@ namespace chat
                     if (error)
                     {
                         logger->info("Disconnected");
-                        server.removeClient(*this);
+                        ioService.post([this]() { server.removeClient(*this); });
                     }
                     else
                     {
@@ -162,7 +165,8 @@ namespace chat
                                 catch (std::exception e)
                                 {
                                     logger->error(e.what());
-                                    server.removeClient(*this);
+                                    ioService.post([this]() { server.removeClient(*this); });
+                                    return;
                                 }
                             }
                             else
@@ -189,7 +193,7 @@ namespace chat
                     statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
                     server.broadcastMessage(statusMessage);
 
-                    server.removeClient(*this);
+                    ioService.post([this]() { server.removeClient(*this); });
                 }
             });
         }

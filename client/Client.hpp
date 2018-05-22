@@ -14,6 +14,10 @@
 
 namespace chat
 {
+    static const size_t BUFFER_SIZE = 1024;
+    static const size_t CONNECTION_TIMEOUT = 3;
+    static const size_t RECONNECT_INTERVAL = 5;
+
     class Client final
     {
     public:
@@ -62,7 +66,7 @@ namespace chat
             logger->info("Connecting");
 
             // wait 3 seconds for connection to finish
-            connectDeadlineTimer.expires_from_now(boost::posix_time::seconds(3));
+            connectDeadlineTimer.expires_from_now(boost::posix_time::seconds(CONNECTION_TIMEOUT));
             connectDeadlineTimer.async_wait([this, endpoint](const boost::system::error_code& error)
             {
                 if (!error) // not boost::asio::error::operation_aborted
@@ -86,7 +90,7 @@ namespace chat
                     connectDeadlineTimer.cancel();
 
                     // wait 5 seconds for reconnect
-                    reconnectDeadlineTimer.expires_from_now(boost::posix_time::seconds(5));
+                    reconnectDeadlineTimer.expires_from_now(boost::posix_time::seconds(RECONNECT_INTERVAL));
                     reconnectDeadlineTimer.async_wait([this, endpoint](const boost::system::error_code& error)
                     {
                         if (!error) // not boost::asio::error::operation_aborted
@@ -138,7 +142,7 @@ namespace chat
 
         void receive()
         {
-            boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
+            boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(BUFFER_SIZE);
 
             socket.async_receive(buffers,
                                 [this](const boost::system::error_code& error, std::size_t bytesTransferred)
@@ -182,7 +186,7 @@ namespace chat
                                 catch (std::exception e)
                                 {
                                     logger->error(e.what());
-                                    exit(EXIT_SUCCESS);
+                                    disconnect();
                                 }
                             }
                             else
