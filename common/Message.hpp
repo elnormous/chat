@@ -12,7 +12,8 @@ struct Message
     enum class Type
     {
         LOGIN,
-        TEXT
+        TEXT,
+        STATUS
     };
 
     Type type;

@@ -18,11 +18,12 @@ class Server final
 {
 public:
     Server(const std::shared_ptr<spdlog::logger>& l,
-           boost::asio::io_service& ioService,
+           boost::asio::io_service& s,
            const boost::asio::ip::tcp::endpoint& endpoint):
         logger(l),
-        acceptor(ioService, endpoint),
-        socket(ioService)
+        ioService(s),
+        acceptor(s, endpoint),
+        socket(s)
     {
         logger->info("Server started (port: {0})", endpoint.port());
         accept();
@@ -30,12 +31,13 @@ public:
 
     void removeClient(Client& client);
     bool isNicknameAvailable(const std::string& nickname) const;
-    void broadcast(Client& client, const std::string& text);
+    void broadcastMessage(const Message& message);
 
 private:
     void accept();
 
     std::shared_ptr<spdlog::logger> logger;
+    boost::asio::io_service& ioService;
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::socket socket;
     std::set<std::unique_ptr<Client>> clients;

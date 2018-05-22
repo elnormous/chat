@@ -82,6 +82,9 @@ private:
             case Message::Type::TEXT:
                 std::cout << message.nickname << ": " << message.body << std::endl;
                 break;
+            case Message::Type::STATUS:
+                std::cout << message.body << std::endl;
+                break;
             default:
                 logger->error("Invalid message received");
                 disconnect();

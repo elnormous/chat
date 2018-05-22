@@ -10,7 +10,7 @@ void Server::accept()
     acceptor.async_accept(socket,
                           [this](boost::system::error_code e) {
                               if (!e)
-                                  clients.insert(std::unique_ptr<Client>(new Client(logger, *this, std::move(socket))));
+                                  clients.insert(std::unique_ptr<Client>(new Client(logger, ioService, *this, std::move(socket))));
 
                               accept();
                           });
@@ -30,24 +30,17 @@ void Server::removeClient(Client& client)
 
 bool Server::isNicknameAvailable(const std::string& nickname) const
 {
+    for (const std::unique_ptr<Client>& client : clients)
     {
-        for (const std::unique_ptr<Client>& client : clients)
-        {
-            if (client->isLoggedIn() && client->getNickname() == nickname)
-                return false;
-        }
+        if (client->isLoggedIn() && client->getNickname() == nickname)
+            return false;
     }
 
     return true;
 }
 
-void Server::broadcast(Client& client, const std::string& text)
+void Server::broadcastMessage(const Message& message)
 {
-    Message message;
-    message.type = Message::Type::TEXT;
-    message.nickname = client.getNickname();
-    message.body = text;
-
     for (const std::unique_ptr<Client>& client : clients)
     {
         if (client->isLoggedIn()) client->sendMessage(message);

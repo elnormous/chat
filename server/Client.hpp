@@ -5,6 +5,8 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cereal/archives/binary.hpp>
 #include "Server.hpp"
@@ -14,13 +16,17 @@ class Client final
 {
 public:
     Client(const std::shared_ptr<spdlog::logger>& l,
-           Server& s,
+           boost::asio::io_service& ioService,
+           Server& serv,
            boost::asio::ip::tcp::socket sock):
         logger(l),
-        server(s),
-        socket(std::move(sock))
+        server(serv),
+        socket(std::move(sock)),
+        inputDeadlineTimer(ioService)
     {
         logger->info("Client connected");
+
+        inputDeadlineTimer.async_wait(boost::bind(&Client::checkDeadline, this));
 
         receive();
     }
@@ -76,7 +82,7 @@ private:
         }
     }
 
-    void handleMessage(Message& message)
+    void handleMessage(const Message& message)
     {
         switch (message.type)
         {
@@ -87,7 +93,12 @@ private:
                 if (loggedIn)
                 {
                     logger->info("{0} sent message: {1}", nickname, message.body);
-                    server.broadcast(*this, message.body);
+
+                    Message textMessage;
+                    textMessage.type = Message::Type::TEXT;
+                    textMessage.nickname = nickname;
+                    textMessage.body = message.body;
+                    server.broadcastMessage(textMessage);
                 }
                 else
                 {
@@ -107,12 +118,14 @@ private:
     {
         boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
 
+        inputDeadlineTimer.expires_from_now(boost::posix_time::seconds(10));
+
         socket.async_receive(buffers,
                              [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
                                  if (error)
                                  {
                                      logger->info("Disconnected");
-                                     disconnect();
+                                     server.removeClient(*this);
                                  }
                                  else
                                  {
@@ -160,13 +173,33 @@ private:
 
     void disconnect()
     {
-        server.removeClient(*this);
+        socket.close();
+        inputDeadlineTimer.cancel();
+    }
+
+    void checkDeadline()
+    {
+        if (inputDeadlineTimer.expires_at() <= boost::asio::deadline_timer::traits_type::now())
+        {
+            logger->info("{0} disconnected due to inactivity", nickname.empty() ? "Client" : nickname);
+
+            Message statusMessage;
+            statusMessage.type = Message::Type::STATUS;
+            statusMessage.nickname = nickname;
+            statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
+            server.broadcastMessage(statusMessage);
+
+            disconnect();
+        }
+        else
+            inputDeadlineTimer.async_wait(boost::bind(&Client::checkDeadline, this));
     }
 
     std::shared_ptr<spdlog::logger> logger;
     Server& server;
     boost::asio::ip::tcp::socket socket;
 
+    boost::asio::deadline_timer inputDeadlineTimer;
     uint16_t lastMessageSize = 0;
     boost::asio::streambuf inputBuffer;
     boost::asio::streambuf outputBuffer;
