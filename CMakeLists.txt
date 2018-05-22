@@ -14,5 +14,5 @@ include_directories(${Boost_INCLUDE_DIRS}
 add_executable(server server/main.cpp server/Server.cpp)
 add_executable(client client/main.cpp)
 
-target_link_libraries(server ${Boost_LIBRARIES})
-target_link_libraries(client ${Boost_LIBRARIES})
+target_link_libraries(server ${Boost_LIBRARIES} pthread)
+target_link_libraries(client ${Boost_LIBRARIES} pthread)
