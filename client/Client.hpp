@@ -32,10 +32,6 @@ public:
             throw std::runtime_error("Failed to connect");
 
         login();
-        login();
-        login();
-        login();
-        login();
         receive();
     }
 
