@@ -23,10 +23,14 @@ public:
         logger(l),
         ioService(s),
         acceptor(s, endpoint),
-        socket(s)
+        socket(s),
+        signals(s, SIGINT, SIGTERM)
     {
         logger->info("Server started (port: {0})", endpoint.port());
         accept();
+
+        signals.async_wait([this](const boost::system::error_code& error,
+                                  int signalNumber) { if (!error) close(); });
     }
 
     void removeClient(Client& client);
@@ -35,10 +39,17 @@ public:
 
 private:
     void accept();
+    void close()
+    {
+        acceptor.cancel();
+        clients.clear();
+    }
 
     std::shared_ptr<spdlog::logger> logger;
     boost::asio::io_service& ioService;
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::socket socket;
     std::set<std::unique_ptr<Client>> clients;
+
+    boost::asio::signal_set signals;
 };

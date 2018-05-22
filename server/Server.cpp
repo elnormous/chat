@@ -8,12 +8,15 @@
 void Server::accept()
 {
     acceptor.async_accept(socket,
-                          [this](boost::system::error_code e) {
-                              if (!e)
-                                  clients.insert(std::unique_ptr<Client>(new Client(logger, ioService, *this, std::move(socket))));
+                          [this](boost::system::error_code error)
+    {
+        if (!error)
+        {
+            clients.insert(std::unique_ptr<Client>(new Client(logger, ioService, *this, std::move(socket))));
 
-                              accept();
-                          });
+            accept();
+        }
+    });
 }
 
 void Server::removeClient(Client& client)

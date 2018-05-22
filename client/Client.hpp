@@ -26,9 +26,13 @@ public:
         nickname(n),
         commandLine(ioService, ::dup(STDIN_FILENO)),
         connectDeadlineTimer(s),
-        reconnectDeadlineTimer(s)
+        reconnectDeadlineTimer(s),
+        signals(s, SIGINT, SIGTERM)
     {
         connect(endpoint);
+
+        signals.async_wait([this](const boost::system::error_code& error,
+                                  int signalNumber) { if (!error) disconnect(); });
     }
 
     void sendMessage(const Message& message)
@@ -88,6 +92,9 @@ private:
 
     void disconnect()
     {
+        signals.cancel();
+        connectDeadlineTimer.cancel();
+        reconnectDeadlineTimer.cancel();
         socket.close();
         commandLine.close();
     }
@@ -221,4 +228,6 @@ private:
 
     boost::asio::deadline_timer connectDeadlineTimer;
     boost::asio::deadline_timer reconnectDeadlineTimer;
+
+    boost::asio::signal_set signals;
 };
