@@ -5,14 +5,15 @@
 #pragma once
 
 #include <string>
+#include <cereal/types/string.hpp>
 
 struct Message
 {
     enum class Type
     {
         LOGIN,
-        CLIENT_MESSAGE,
-        SERVER_MESSAGE
+        CLIENT_TEXT,
+        SERVER_TEXT
     };
 
     Type type;

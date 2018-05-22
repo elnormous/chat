@@ -69,7 +69,7 @@ int main(int argc, const char * argv[])
                 std::getline(std::cin, line);
 
                 ioService.post([&client, line]() {
-                    client.sendMessage(line);
+                    client.sendText(line);
                 });
 
                 // TODO: encode and send message

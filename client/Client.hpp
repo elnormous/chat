@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/binary.hpp>
 #include <boost/asio.hpp>
+#include <boost/endian/conversion.hpp>
+#include <cereal/archives/binary.hpp>
 #include "cereal/cereal.hpp"
 #include "spdlog/spdlog.h"
 #include "Message.hpp"
@@ -32,38 +32,48 @@ public:
             throw std::runtime_error("Failed to connect");
 
         login();
+        login();
+        login();
+        login();
+        login();
         receive();
     }
 
-    void sendMessage(const std::string& str)
+    void sendText(const std::string& str)
     {
-        boost::asio::streambuf buffer;
-        std::ostream os(&buffer);
-
-        cereal::BinaryOutputArchive archive(os);
-
         Message message;
-        message.type = Message::Type::CLIENT_MESSAGE;
+        message.type = Message::Type::CLIENT_TEXT;
         message.body = str;
-        archive(message);
 
-        socket.send(buffer.data());
+        sendMessage(message);
     }
 
 private:
+    void sendMessage(const Message& message)
+    {
+        std::ostream outputStream(&outputBuffer);
+        cereal::BinaryOutputArchive archive(outputStream);
+        archive(message);
+
+        std::cout << outputBuffer.size() << std::endl;
+
+        uint16_t messageSize = boost::endian::native_to_big(static_cast<uint16_t>(outputBuffer.size()));
+
+        std::cout << messageSize << std::endl;
+
+        socket.send(boost::asio::buffer(&messageSize, sizeof(messageSize)));
+
+        size_t n = socket.send(outputBuffer.data());
+        outputBuffer.consume(n); // remove sent data from the buffer
+    }
+
     void login()
     {
-        boost::asio::streambuf buffer;
-        std::ostream os(&buffer);
-
-        cereal::BinaryOutputArchive archive(os);
-
         Message message;
         message.type = Message::Type::LOGIN;
         message.nickname = nickname;
-        archive(message);
 
-        socket.send(buffer.data());
+        sendMessage(message);
     }
 
     void disconnect()
@@ -73,7 +83,9 @@ private:
 
     void receive()
     {
-        socket.async_receive(boost::asio::buffer(buffer.data(), buffer.size()),
+        boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
+
+        socket.async_receive(buffers,
                              [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
                                  if (error)
                                  {
@@ -83,6 +95,51 @@ private:
                                  else
                                  {
                                      logger->info("Received {0} bytes", bytesTransferred);
+
+                                     inputBuffer.commit(bytesTransferred);
+
+                                     while (inputBuffer.size() >= sizeof(uint16_t))
+                                     {
+                                         std::istream inputStream(&inputBuffer);
+
+                                         if (!lastMessageSize)
+                                         {
+                                             uint16_t messageSize;
+                                             inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
+                                             lastMessageSize = boost::endian::big_to_native(messageSize);
+                                         }
+
+                                         if (inputBuffer.size() >= lastMessageSize)
+                                         {
+                                             try
+                                             {
+                                                 cereal::BinaryInputArchive archive(inputStream);
+                                                 Message message;
+                                                 archive(message);
+
+                                                 switch (message.type)
+                                                 {
+                                                     case Message::Type::SERVER_TEXT:
+                                                         std::cout << "SERVER_TEXT" << std::endl;
+                                                         break;
+                                                     default:
+                                                         logger->error("Invalid message received");
+                                                         disconnect();
+                                                         break;
+                                                 }
+
+                                                 lastMessageSize = 0;
+                                             }
+                                             catch (std::exception e)
+                                             {
+                                                 logger->error(e.what());
+                                                 disconnect();
+                                             }
+                                         }
+                                         else
+                                             break;
+                                     }
+
                                      receive();
                                  }
                              });
@@ -91,6 +148,10 @@ private:
     std::shared_ptr<spdlog::logger> logger;
     boost::asio::io_service& ioService;
     boost::asio::ip::tcp::socket socket;
-    std::vector<uint8_t> buffer = std::vector<uint8_t>(1024);
+
+    uint16_t lastMessageSize = 0;
+    boost::asio::streambuf inputBuffer;
+    boost::asio::streambuf outputBuffer;
+
     std::string nickname;
 };
