@@ -88,54 +88,58 @@ private:
         boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
 
         socket.async_receive(buffers,
-                             [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
-                                 if (error)
-                                 {
-                                     logger->info("Disconnected");
-                                     disconnect();
-                                 }
-                                 else
-                                 {
-                                     logger->info("Received {0} bytes", bytesTransferred);
+                             [this](const boost::system::error_code& error, std::size_t bytesTransferred)
+        {
+            if (error != boost::asio::error::operation_aborted)
+            {
+                if (error)
+                {
+                    logger->info("Disconnected");
+                    disconnect();
+                }
+                else
+                {
+                    logger->info("Received {0} bytes", bytesTransferred);
 
-                                     inputBuffer.commit(bytesTransferred);
+                    inputBuffer.commit(bytesTransferred);
 
-                                     while (inputBuffer.size() >= sizeof(uint16_t))
-                                     {
-                                         std::istream inputStream(&inputBuffer);
+                    while (inputBuffer.size() >= sizeof(uint16_t))
+                    {
+                        std::istream inputStream(&inputBuffer);
 
-                                         if (!lastMessageSize)
-                                         {
-                                             uint16_t messageSize;
-                                             inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
-                                             lastMessageSize = boost::endian::big_to_native(messageSize);
-                                         }
+                        if (!lastMessageSize)
+                        {
+                            uint16_t messageSize;
+                            inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
+                            lastMessageSize = boost::endian::big_to_native(messageSize);
+                        }
 
-                                         if (inputBuffer.size() >= lastMessageSize)
-                                         {
-                                             try
-                                             {
-                                                 cereal::BinaryInputArchive archive(inputStream);
-                                                 Message message;
-                                                 archive(message);
+                        if (inputBuffer.size() >= lastMessageSize)
+                        {
+                            try
+                            {
+                                cereal::BinaryInputArchive archive(inputStream);
+                                Message message;
+                                archive(message);
 
-                                                 handleMessage(message);
+                                handleMessage(message);
 
-                                                 lastMessageSize = 0;
-                                             }
-                                             catch (std::exception e)
-                                             {
-                                                 logger->error(e.what());
-                                                 disconnect();
-                                             }
-                                         }
-                                         else
-                                             break;
-                                     }
+                                lastMessageSize = 0;
+                            }
+                            catch (std::exception e)
+                            {
+                                logger->error(e.what());
+                                disconnect();
+                            }
+                        }
+                        else
+                            break;
+                    }
 
-                                     receive();
-                                 }
-                             });
+                    receive();
+                }
+            }
+        });
     }
 
     std::shared_ptr<spdlog::logger> logger;

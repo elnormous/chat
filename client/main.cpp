@@ -63,7 +63,7 @@ int main(int argc, const char * argv[])
 
         try
         {
-            spdlog::set_level(logLevel.Get());
+            console->set_level(logLevel.Get());
 
             boost::asio::io_service ioService;
 
@@ -92,7 +92,7 @@ int main(int argc, const char * argv[])
                 });
             }
 
-            thread.join();
+            // thread.join();
         }
         catch (std::exception& e)
         {

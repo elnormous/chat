@@ -64,7 +64,7 @@ int main(int argc, const char * argv[])
 
         try
         {
-            spdlog::set_level(logLevel.Get());
+            console->set_level(logLevel.Get());
 
             boost::asio::io_service ioService;
             boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port.Get());

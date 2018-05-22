@@ -16,17 +16,16 @@ class Client final
 {
 public:
     Client(const std::shared_ptr<spdlog::logger>& l,
-           boost::asio::io_service& ioService,
+           boost::asio::io_service& service,
            Server& serv,
            boost::asio::ip::tcp::socket sock):
         logger(l),
+        ioService(service),
         server(serv),
         socket(std::move(sock)),
-        inputDeadlineTimer(ioService)
+        inputDeadlineTimer(service)
     {
         logger->info("Client connected");
-
-        inputDeadlineTimer.async_wait(boost::bind(&Client::checkDeadline, this));
 
         receive();
     }
@@ -78,7 +77,7 @@ private:
             reply.body = "Nickname " + newNickname + " is unavailable";
             sendMessage(reply);
 
-            disconnect();
+            server.removeClient(*this);
         }
     }
 
@@ -103,13 +102,12 @@ private:
                 else
                 {
                     logger->error("User not logged in");
-
-                    disconnect();
+                    server.removeClient(*this);
                 }
                 break;
             default:
                 logger->error("Invalid message received");
-                disconnect();
+                server.removeClient(*this);
                 break;
         }
     }
@@ -119,83 +117,89 @@ private:
         boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
 
         inputDeadlineTimer.expires_from_now(boost::posix_time::seconds(10));
+        checkDeadline();
 
         socket.async_receive(buffers,
-                             [this](const boost::system::error_code& error, std::size_t bytesTransferred) {
-                                 if (error)
-                                 {
-                                     logger->info("Disconnected");
-                                     server.removeClient(*this);
-                                 }
-                                 else
-                                 {
-                                     logger->info("Received {0} bytes", bytesTransferred);
+                             [this](const boost::system::error_code& error, std::size_t bytesTransferred)
+        {
+            if (error != boost::asio::error::operation_aborted)
+            {
+                if (error)
+                {
+                    logger->info("Disconnected");
+                    server.removeClient(*this);
+                }
+                else
+                {
+                    logger->info("Received {0} bytes", bytesTransferred);
 
-                                     inputBuffer.commit(bytesTransferred);
+                    inputBuffer.commit(bytesTransferred);
 
-                                     while (inputBuffer.size() >= sizeof(uint16_t))
-                                     {
-                                         std::istream inputStream(&inputBuffer);
+                    while (inputBuffer.size() >= sizeof(uint16_t))
+                    {
+                        std::istream inputStream(&inputBuffer);
 
-                                         if (!lastMessageSize)
-                                         {
-                                             uint16_t messageSize;
-                                             inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
-                                             lastMessageSize = boost::endian::big_to_native(messageSize);
-                                         }
+                        if (!lastMessageSize)
+                        {
+                            uint16_t messageSize;
+                            inputStream.read(reinterpret_cast<char*>(&messageSize), sizeof(messageSize));
+                            lastMessageSize = boost::endian::big_to_native(messageSize);
+                        }
 
-                                         if (inputBuffer.size() >= lastMessageSize)
-                                         {
-                                             try
-                                             {
-                                                 cereal::BinaryInputArchive archive(inputStream);
-                                                 Message message;
-                                                 archive(message);
+                        if (inputBuffer.size() >= lastMessageSize)
+                        {
+                            try
+                            {
+                                cereal::BinaryInputArchive archive(inputStream);
+                                Message message;
+                                archive(message);
 
-                                                 handleMessage(message);
+                                handleMessage(message);
 
-                                                 lastMessageSize = 0;
-                                             }
-                                             catch (std::exception e)
-                                             {
-                                                 logger->error(e.what());
-                                                 disconnect();
-                                             }
-                                         }
-                                         else
-                                             break;
-                                     }
+                                lastMessageSize = 0;
+                            }
+                            catch (std::exception e)
+                            {
+                                logger->error(e.what());
+                                server.removeClient(*this);
+                            }
+                        }
+                        else
+                            break;
+                    }
 
-                                     receive();
-                                 }
-                             });
-    }
-
-    void disconnect()
-    {
-        socket.close();
-        inputDeadlineTimer.cancel();
+                    receive();
+                }
+            }
+        });
     }
 
     void checkDeadline()
     {
-        if (inputDeadlineTimer.expires_at() <= boost::asio::deadline_timer::traits_type::now())
+        inputDeadlineTimer.async_wait([this](const boost::system::error_code& error)
         {
-            logger->info("{0} disconnected due to inactivity", nickname.empty() ? "Client" : nickname);
+            if (error != boost::asio::error::operation_aborted)
+            {
+                if (inputDeadlineTimer.expires_at() <= boost::asio::deadline_timer::traits_type::now())
+                {
+                    logger->info("{0} disconnected due to inactivity", nickname.empty() ? "Client" : nickname);
 
-            Message statusMessage;
-            statusMessage.type = Message::Type::STATUS;
-            statusMessage.nickname = nickname;
-            statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
-            server.broadcastMessage(statusMessage);
+                    Message statusMessage;
+                    statusMessage.type = Message::Type::STATUS;
+                    statusMessage.nickname = nickname;
+                    statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
+                    server.broadcastMessage(statusMessage);
 
-            disconnect();
-        }
-        else
-            inputDeadlineTimer.async_wait(boost::bind(&Client::checkDeadline, this));
+                    server.removeClient(*this);
+                }
+                else
+                    checkDeadline();
+            }
+        });
     }
 
     std::shared_ptr<spdlog::logger> logger;
+    boost::asio::io_service& ioService;
     Server& server;
     boost::asio::ip::tcp::socket socket;
 
