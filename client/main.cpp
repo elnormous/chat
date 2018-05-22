@@ -73,26 +73,7 @@ int main(int argc, const char * argv[])
 
             Client client(console, ioService, endpointIterator, nickname.Get());
 
-            // run io service in a separate thread
-            std::thread thread([&ioService]() {
-                ioService.run();
-            });
-
-            std::string line;
-            for (;;)
-            {
-                std::getline(std::cin, line);
-
-                ioService.post([&client, line]() {
-                    Message message;
-                    message.type = Message::Type::TEXT;
-                    message.body = line;
-
-                    client.sendMessage(message);
-                });
-            }
-
-            // thread.join();
+            ioService.run();
         }
         catch (std::exception& e)
         {

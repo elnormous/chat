@@ -1,6 +1,6 @@
 # Chat
 
-Simple cross-platform chat client and server.
+Simple chat client and server.
 
 # Installation
 

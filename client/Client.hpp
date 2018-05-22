@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <unistd.h>
 #include <boost/asio.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cereal/archives/binary.hpp>
@@ -21,7 +23,8 @@ public:
         logger(l),
         ioService(s),
         socket(s),
-        nickname(n)
+        nickname(n),
+        commandLine(ioService, ::dup(STDIN_FILENO))
     {
         boost::system::error_code error;
         boost::asio::connect(socket, endpoints, error);
@@ -33,6 +36,7 @@ public:
 
         login();
         receive();
+        readCommandLine();
     }
 
     void sendMessage(const Message& message)
@@ -49,6 +53,12 @@ public:
     }
 
 private:
+    void disconnect()
+    {
+        socket.close();
+        commandLine.close();
+    }
+
     void login()
     {
         Message message;
@@ -56,11 +66,6 @@ private:
         message.nickname = nickname;
 
         sendMessage(message);
-    }
-
-    void disconnect()
-    {
-
     }
 
     void handleMessage(Message& message)
@@ -129,7 +134,7 @@ private:
                             catch (std::exception e)
                             {
                                 logger->error(e.what());
-                                disconnect();
+                                exit(EXIT_SUCCESS);
                             }
                         }
                         else
@@ -138,6 +143,32 @@ private:
 
                     receive();
                 }
+            }
+        });
+    }
+
+    void readCommandLine()
+    {
+        boost::asio::async_read_until(commandLine, commandLineBuffer, '\n',
+                                      [this](const boost::system::error_code& error,
+                                             std::size_t length)
+        {
+            if (!error)
+            {
+                boost::asio::streambuf::const_buffers_type buffers = commandLineBuffer.data();
+
+                std::string line(boost::asio::buffers_begin(buffers),
+                                 boost::asio::buffers_begin(buffers) + length - 1);
+
+                commandLineBuffer.consume(length);
+
+                Message message;
+                message.type = Message::Type::TEXT;
+                message.body = line;
+
+                sendMessage(message);
+
+                readCommandLine();
             }
         });
     }
@@ -151,4 +182,7 @@ private:
     boost::asio::streambuf outputBuffer;
 
     std::string nickname;
+
+    boost::asio::posix::stream_descriptor commandLine;
+    boost::asio::streambuf commandLineBuffer;
 };
