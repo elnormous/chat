@@ -32,7 +32,14 @@ public:
         connect(endpoint);
 
         signals.async_wait([this](const boost::system::error_code& error,
-                                  int signalNumber) { if (!error) disconnect(); });
+                                  int signalNumber)
+        {
+            if (!error)
+            {
+                logger->info("Received signal {0}", signalNumber);
+                disconnect();
+            }
+        });
     }
 
     void sendMessage(const Message& message)

@@ -30,7 +30,14 @@ public:
         accept();
 
         signals.async_wait([this](const boost::system::error_code& error,
-                                  int signalNumber) { if (!error) close(); });
+                                  int signalNumber)
+        {
+            if (!error)
+            {
+                logger->info("Received signal {0}", signalNumber);
+                close();
+            }
+        });
     }
 
     void removeClient(Client& client);
