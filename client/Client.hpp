@@ -18,25 +18,17 @@ class Client final
 public:
     Client(const std::shared_ptr<spdlog::logger>& l,
            boost::asio::io_service& s,
-           boost::asio::ip::tcp::resolver::iterator endpoints,
+           boost::asio::ip::tcp::endpoint endpoint,
            const std::string n):
         logger(l),
         ioService(s),
         socket(s),
         nickname(n),
-        commandLine(ioService, ::dup(STDIN_FILENO))
+        commandLine(ioService, ::dup(STDIN_FILENO)),
+        connectDeadlineTimer(s),
+        reconnectDeadlineTimer(s)
     {
-        boost::system::error_code error;
-        boost::asio::connect(socket, endpoints, error);
-
-        if (!error)
-            logger->info("Connected");
-        else
-            throw std::runtime_error("Failed to connect");
-
-        login();
-        receive();
-        readCommandLine();
+        connect(endpoint);
     }
 
     void sendMessage(const Message& message)
@@ -53,6 +45,47 @@ public:
     }
 
 private:
+    void connect(boost::asio::ip::tcp::endpoint endpoint)
+    {
+        logger->info("Connecting");
+
+        // wait 3 seconds for connection to finish
+        connectDeadlineTimer.expires_from_now(boost::posix_time::seconds(3));
+        connectDeadlineTimer.async_wait([this, endpoint](const boost::system::error_code& error)
+        {
+            if (!error) // not boost::asio::error::operation_aborted
+                socket.close();
+        });
+
+        socket.async_connect(endpoint, [this, endpoint](const boost::system::error_code& error) {
+            if (!error)
+            {
+                logger->info("Connected");
+
+                connectDeadlineTimer.cancel();
+                reconnectDeadlineTimer.cancel();
+
+                login();
+                receive();
+                readCommandLine();
+            }
+            else
+            {
+                connectDeadlineTimer.cancel();
+
+                // wait 5 seconds for reconnect
+                reconnectDeadlineTimer.expires_from_now(boost::posix_time::seconds(5));
+                reconnectDeadlineTimer.async_wait([this, endpoint](const boost::system::error_code& error)
+                {
+                    if (!error) // not boost::asio::error::operation_aborted
+                    {
+                        connect(endpoint);
+                    }
+                });
+            }
+        });
+    }
+
     void disconnect()
     {
         socket.close();
@@ -185,4 +218,7 @@ private:
 
     boost::asio::posix::stream_descriptor commandLine;
     boost::asio::streambuf commandLineBuffer;
+
+    boost::asio::deadline_timer connectDeadlineTimer;
+    boost::asio::deadline_timer reconnectDeadlineTimer;
 };

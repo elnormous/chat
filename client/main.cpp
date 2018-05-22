@@ -66,12 +66,10 @@ int main(int argc, const char * argv[])
             console->set_level(logLevel.Get());
 
             boost::asio::io_service ioService;
-
             boost::asio::ip::tcp::resolver resolver(ioService);
-
             auto endpointIterator = resolver.resolve(address.Get(), port.Get());
 
-            Client client(console, ioService, endpointIterator, nickname.Get());
+            Client client(console, ioService, endpointIterator->endpoint(), nickname.Get());
 
             ioService.run();
         }
