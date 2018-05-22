@@ -21,6 +21,18 @@ int main(int argc, const char * argv[])
         args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
         args::ValueFlag<uint16_t> port(parser, "port", "Port number to listen to", {'p', "port"}, args::Options::Required);
 
+        std::unordered_map<std::string, spdlog::level::level_enum> map {
+            {"trace", spdlog::level::trace},
+            {"debug", spdlog::level::debug},
+            {"info", spdlog::level::info},
+            {"warn", spdlog::level::warn},
+            {"err", spdlog::level::err},
+            {"critical", spdlog::level::critical},
+            {"off", spdlog::level::off}
+        };
+
+        args::MapFlag<std::string, spdlog::level::level_enum> logLevel(parser, "level", "Log level", {'l', "level"}, map);
+
         try
         {
             parser.ParseCLI(argc, argv);
@@ -52,6 +64,8 @@ int main(int argc, const char * argv[])
 
         try
         {
+            spdlog::set_level(logLevel.Get());
+
             boost::asio::io_service ioService;
             boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port.Get());
 
