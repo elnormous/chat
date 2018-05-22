@@ -55,6 +55,44 @@ private:
         nickname = newNickname;
     }
 
+    void handleMessage(Message& message)
+    {
+        switch (message.type)
+        {
+            case Message::Type::LOGIN:
+                if (server.isNicknameAvailable(message.nickname))
+                {
+                    logger->info("{0} logged in", message.nickname);
+
+                    loggedIn = true;
+
+                    Message reply;
+                    reply.type = Message::Type::LOGIN;
+                    reply.body = "Logged in with nickname " + message.nickname;
+                    sendMessage(reply);
+                }
+                else
+                {
+                    logger->error("Nickname {0} unavailable", message.nickname);
+
+                    Message reply;
+                    reply.type = Message::Type::LOGIN;
+                    reply.body = "Nickname " + message.nickname + " is unavailable";
+                    sendMessage(reply);
+
+                    disconnect();
+                }
+                break;
+            case Message::Type::CLIENT_TEXT:
+                std::cout << "CLIENT_TEXT" << std::endl;
+                break;
+            default:
+                logger->error("Invalid message received");
+                disconnect();
+                break;
+        }
+    }
+
     void receive()
     {
         boost::asio::streambuf::mutable_buffers_type buffers = inputBuffer.prepare(1024);
@@ -91,19 +129,7 @@ private:
                                                  Message message;
                                                  archive(message);
 
-                                                 switch (message.type)
-                                                 {
-                                                     case Message::Type::LOGIN:
-                                                         std::cout << "LOGIN " << message.nickname << std::endl;
-                                                         break;
-                                                     case Message::Type::CLIENT_TEXT:
-                                                         std::cout << "CLIENT_TEXT" << std::endl;
-                                                         break;
-                                                     default:
-                                                         logger->error("Invalid message received");
-                                                         disconnect();
-                                                         break;
-                                                 }
+                                                 handleMessage(message);
 
                                                  lastMessageSize = 0;
                                              }

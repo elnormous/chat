@@ -27,3 +27,16 @@ void Server::removeClient(Client& client)
         }
     }
 }
+
+bool Server::isNicknameAvailable(const std::string& nickname) const
+{
+    {
+        for (const std::unique_ptr<Client>& client : clients)
+        {
+            if (client->isLoggedIn() && client->getNickname() == nickname)
+                return false;
+        }
+    }
+
+    return true;
+}

@@ -51,12 +51,7 @@ private:
         cereal::BinaryOutputArchive archive(outputStream);
         archive(message);
 
-        std::cout << outputBuffer.size() << std::endl;
-
         uint16_t messageSize = boost::endian::native_to_big(static_cast<uint16_t>(outputBuffer.size()));
-
-        std::cout << messageSize << std::endl;
-
         socket.send(boost::asio::buffer(&messageSize, sizeof(messageSize)));
 
         size_t n = socket.send(outputBuffer.data());
@@ -75,6 +70,25 @@ private:
     void disconnect()
     {
 
+    }
+
+    void handleMessage(Message& message)
+    {
+        switch (message.type)
+        {
+            case Message::Type::LOGIN:
+                std::cout << "LOGIN" << std::endl;
+                logger->info(message.body);
+                break;
+            case Message::Type::SERVER_TEXT:
+                std::cout << "SERVER_TEXT" << std::endl;
+                std::cout << message.nickname << ": " << message.body << std::endl;
+                break;
+            default:
+                logger->error("Invalid message received");
+                disconnect();
+                break;
+        }
     }
 
     void receive()
@@ -113,16 +127,7 @@ private:
                                                  Message message;
                                                  archive(message);
 
-                                                 switch (message.type)
-                                                 {
-                                                     case Message::Type::SERVER_TEXT:
-                                                         std::cout << "SERVER_TEXT" << std::endl;
-                                                         break;
-                                                     default:
-                                                         logger->error("Invalid message received");
-                                                         disconnect();
-                                                         break;
-                                                 }
+                                                 handleMessage(message);
 
                                                  lastMessageSize = 0;
                                              }

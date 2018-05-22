@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <set>
+#include <string>
 #include <boost/asio.hpp>
 #include "cereal/cereal.hpp"
 #include "spdlog/spdlog.h"
@@ -28,6 +29,7 @@ public:
     }
 
     void removeClient(Client& client);
+    bool isNicknameAvailable(const std::string& nickname) const;
 
 private:
     void accept();
