@@ -17,7 +17,7 @@ int main(int argc, const char * argv[])
         args::ArgumentParser parser("A simple command-line chat program.");
         args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
         args::ValueFlag<std::string> address(parser, "address", "Address of the server", {'a', "address"}, args::Options::Required);
-        args::ValueFlag<std::string> port(parser, "port", "Port number to connect to", {'p', "port"}, args::Options::Required);
+        args::ValueFlag<uint16_t> port(parser, "port", "Port number to connect to", {'p', "port"}, args::Options::Required);
         args::ValueFlag<std::string> nickname(parser, "nickname", "Nicname of the user", {'n', "nickname"}, args::Options::Required);
 
         std::unordered_map<std::string, spdlog::level::level_enum> map {
@@ -67,7 +67,8 @@ int main(int argc, const char * argv[])
 
             boost::asio::io_service ioService;
             boost::asio::ip::tcp::resolver resolver(ioService);
-            auto endpointIterator = resolver.resolve(address.Get(), port.Get());
+            boost::asio::ip::tcp::resolver::query query(address.Get(), std::to_string(port.Get()));
+            auto endpointIterator = resolver.resolve(query);
 
             Client client(console, ioService, endpointIterator->endpoint(), nickname.Get());
 
