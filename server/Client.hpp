@@ -150,6 +150,13 @@ namespace chat
                                 lastMessageSize = htons(messageSize);
                             }
 
+                            if (lastMessageSize > BUFFER_SIZE ||
+                                inputBuffer.size() > BUFFER_SIZE)
+                            {
+                                logger->error("Buffer too big");
+                                ioService.post([this]() { server.removeClient(*this); });
+                            }
+
                             if (inputBuffer.size() >= lastMessageSize)
                             {
                                 try

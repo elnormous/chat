@@ -171,6 +171,13 @@ namespace chat
                                 lastMessageSize = htons(messageSize);
                             }
 
+                            if (lastMessageSize > BUFFER_SIZE ||
+                                inputBuffer.size() > BUFFER_SIZE)
+                            {
+                                logger->error("Buffer too big");
+                                disconnect();
+                            }
+
                             if (inputBuffer.size() >= lastMessageSize)
                             {
                                 try
