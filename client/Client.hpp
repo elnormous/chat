@@ -35,16 +35,6 @@ public:
         receive();
     }
 
-    void sendText(const std::string& str)
-    {
-        Message message;
-        message.type = Message::Type::TEXT;
-        message.body = str;
-
-        sendMessage(message);
-    }
-
-private:
     void sendMessage(const Message& message)
     {
         std::ostream outputStream(&outputBuffer);
@@ -58,6 +48,7 @@ private:
         outputBuffer.consume(n); // remove sent data from the buffer
     }
 
+private:
     void login()
     {
         Message message;
