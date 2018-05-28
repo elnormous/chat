@@ -58,6 +58,12 @@ namespace chat
         }
 
     private:
+        void disconnect()
+        {
+            socket.close();
+            ioService.post([this]() { server.removeClient(*this); });
+        }
+
         void login(const std::string& newNickname)
         {
             if (server.isNicknameAvailable(newNickname))
@@ -81,7 +87,7 @@ namespace chat
                 reply.body = "Nickname " + newNickname + " is unavailable";
                 sendMessage(reply);
 
-                ioService.post([this]() { server.removeClient(*this); });
+                disconnect();
             }
         }
 
@@ -106,12 +112,12 @@ namespace chat
                     else
                     {
                         logger->error("User not logged in");
-                        ioService.post([this]() { server.removeClient(*this); });
+                        disconnect();
                     }
                     break;
                 default:
                     logger->error("Invalid message received");
-                    ioService.post([this]() { server.removeClient(*this); });
+                    disconnect();
                     break;
             }
         }
@@ -131,7 +137,7 @@ namespace chat
                     if (error)
                     {
                         logger->info("Disconnected");
-                        ioService.post([this]() { server.removeClient(*this); });
+                        disconnect();
                     }
                     else
                     {
@@ -154,7 +160,7 @@ namespace chat
                                 inputBuffer.size() > BUFFER_SIZE)
                             {
                                 logger->error("Buffer too big");
-                                ioService.post([this]() { server.removeClient(*this); });
+                                disconnect();
                             }
 
                             if (inputBuffer.size() >= lastMessageSize)
@@ -172,7 +178,7 @@ namespace chat
                                 catch (const std::exception& e)
                                 {
                                     logger->error(e.what());
-                                    ioService.post([this]() { server.removeClient(*this); });
+                                    disconnect();
                                     return;
                                 }
                             }
@@ -200,7 +206,7 @@ namespace chat
                     statusMessage.body = (nickname.empty() ? "Client" : nickname) + " disconnected due to inactivity";
                     server.broadcastMessage(statusMessage);
 
-                    ioService.post([this]() { server.removeClient(*this); });
+                    disconnect();
                 }
             });
         }
