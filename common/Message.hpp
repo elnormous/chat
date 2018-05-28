@@ -11,7 +11,7 @@ namespace chat
 {
     struct Message
     {
-        enum class Type
+        enum class Type: uint8_t
         {
             LOGIN,
             TEXT,
