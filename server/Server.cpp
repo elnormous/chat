@@ -35,7 +35,7 @@ namespace chat
 
     bool Server::isNicknameAvailable(const std::string& nickname) const
     {
-        for (const std::unique_ptr<Client>& client : clients)
+        for (const auto& client : clients)
         {
             if (client->isLoggedIn() && client->getNickname() == nickname)
                 return false;
@@ -46,7 +46,7 @@ namespace chat
 
     void Server::broadcastMessage(const Message& message)
     {
-        for (const std::unique_ptr<Client>& client : clients)
+        for (const auto& client : clients)
         {
             if (client->isLoggedIn()) client->sendMessage(message);
         }
