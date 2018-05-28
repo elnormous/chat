@@ -169,7 +169,7 @@ namespace chat
 
                                     lastMessageSize = 0;
                                 }
-                                catch (std::exception e)
+                                catch (const std::exception& e)
                                 {
                                     logger->error(e.what());
                                     ioService.post([this]() { server.removeClient(*this); });

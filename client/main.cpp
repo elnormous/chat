@@ -36,25 +36,25 @@ int main(int argc, const char * argv[])
         {
             parser.ParseCLI(argc, argv);
         }
-        catch (args::Completion e)
+        catch (const args::Completion& e)
         {
             // log this in a user friendly way (without spdlog)
             std::cerr << e.what() << std::endl;
             return EXIT_SUCCESS;
         }
-        catch (args::Help)
+        catch (const args::Help*)
         {
             // log this in a user friendly way (without spdlog)
             std::cout << parser << std::endl;
             return EXIT_SUCCESS;
         }
-        catch (args::RequiredError e)
+        catch (const args::RequiredError& e)
         {
             // log this in a user friendly way (without spdlog)
             std::cerr << e.what() << std::endl;
             return EXIT_FAILURE;
         }
-        catch (args::ParseError e)
+        catch (const args::ParseError& e)
         {
             // log this in a user friendly way (without spdlog)
             std::cerr << e.what() << std::endl;
@@ -74,7 +74,7 @@ int main(int argc, const char * argv[])
 
             ioService.run();
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
             console->error("{0}", e.what());
         }
