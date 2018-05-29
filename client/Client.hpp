@@ -153,6 +153,7 @@ namespace chat
                     {
                         logger->info("Disconnected");
                         disconnect();
+                        return;
                     }
                     else
                     {
@@ -176,6 +177,7 @@ namespace chat
                             {
                                 logger->error("Buffer too big");
                                 disconnect();
+                                return;
                             }
 
                             if (inputBuffer.size() >= lastMessageSize)
@@ -194,6 +196,7 @@ namespace chat
                                 {
                                     logger->error(e.what());
                                     disconnect();
+                                    return;
                                 }
                             }
                             else
